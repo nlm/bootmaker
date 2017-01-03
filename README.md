@@ -3,7 +3,7 @@ bootmaker
 
 Simple, Docker-based, light, network-boot Linux system, based on Alpine.
 
-[](http://www.lepoint.fr/images/2012/05/06/is-568854-jpg_390401.JPG)
+![Bootmaker](http://www.lepoint.fr/images/2012/05/06/is-568854-jpg_390401.JPG)
 
 How it works
 ------------
