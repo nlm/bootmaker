@@ -6,8 +6,8 @@ Simple, Docker-based, light, network-boot Linux system, based on Alpine.
 How it works
 ------------
 
-It uses Docker Alpine Linux images from @multiarch to build a light
-rootfs, pack it into an initramfs
+It uses Docker Alpine Linux images from [multiarch](https://github.com/multiarch) to build a light
+rootfs, pack it into an initramfs, and provide a matching kernel.
 
 How to use ?
 ------------
