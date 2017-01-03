@@ -1,0 +1,32 @@
+FROM multiarch/alpine:%%ARCH%%-%%ALPINE_VERSION%%
+MAINTAINER Nicolas Limage <nlimage@online.net>
+
+# Installing static busybox
+COPY assets/downloads/busybox-%%ARCH%% /bin/busybox.static
+RUN chmod 755 /bin/busybox.static \
+    && mv /bin/busybox.static /bin/busybox
+RUN /bin/busybox --install -s
+
+# Installing core packages
+RUN apk update \
+    && apk add udev bkeymaps \
+    && find /var/cache/apk -type f -delete
+
+# Installing init and direct dependencies
+COPY assets/init/init assets/init/functions /
+COPY assets/etc/ /etc/
+
+# -------------------------------
+# Add your custom directives here
+# -------------------------------
+
+# Listing the files to export
+RUN find . -xdev -not -name .exports > .exports
+
+# Installing Kernel
+RUN apk update \
+    && apk add linux-vanilla \
+    && find /var/cache/apk -type f -delete
+
+# Finding installed kernel version
+RUN ls -1 /lib/modules > /.kversion

@@ -1,0 +1,125 @@
+# -*- shell-script -*-
+
+VERBOSE=${VERBOSE:-0}
+
+## Logging functions
+
+_log_msg() {
+    echo -ne "${*}" >&2
+}
+_log_file() {
+    echo "${*}" >> /initrd.log
+}
+log_success_msg() {
+    einfo "${*}"
+    _log_file "success: ${*}"
+}
+log_failure_msg() {
+    eerror "${*}"
+    _log_file "failure: ${*}"
+}
+log_warning_msg() {
+    ewarn "${*}"
+    _log_file "warning: ${*}"
+}
+log_begin_msg() {
+    einfo "${*}..."
+    _log_file "info: ${*}"
+}
+log_end_msg() {
+    _log_msg ""
+}
+log_fatal_msg() {
+    _log_msg "Fatal: ${*}\n"
+    _log_file "fatal: ${*}\n"
+    sleep 5
+    # FIXME: drop a shell but reboot automatically if nothing happen on the debug shell
+    reboot
+}
+einfo() {
+    _log_msg "\033[1;36m>>> \033[0m${*}\n"
+}
+esuccess() {
+    _log_msg "\033[1;32m>>> \033[0m${*}\n"
+}
+ewarn() {
+    _log_msg "\033[1;33m>>> \033[0m${*}\n"
+}
+eerror() {
+    _log_msg "\033[1;31m>>> ${*}\033[0m\n"
+}
+edebug() {
+    if [ "$VERBOSE" = "1" ]; then
+	_log_msg "\033[0;90m>>> ${*}\033[0m\n"
+    fi
+}
+die() {
+    eerror "$*"
+    rescueshell
+}
+
+emount() {
+    _log_file "mounting: mount $@"
+    target=$(echo $@ | awk '{ print $NF }')
+    einfo "Mounting $target..."
+    run mount $@
+}
+
+run() {
+    _log_file "executing: $@"
+    edebug "Executing: $@"
+    "$@" >>/initrd.log 2>&1
+    ret=$?
+    if [[ $ret -eq 0 ]]; then
+	_log_file "Successfully ran '$@'"
+    else
+	eerror "'$@' failed"
+    fi
+    return $ret
+}
+
+rescueshell() {
+    ewarn "Rescue Shell (Busybox's /bin/sh)"
+    ewarn "To continue, press 'control-D'"
+    ewarn "To reboot, go to https://cloud.scaleway.com/"
+    exec /bin/sh
+}
+
+# Function for parsing command line options with "=" in them
+get_opt() {
+    key=$1
+    default=$2
+    ret=$(cat /proc/cmdline "${rootmnt}/proc/cmdline" 2>/dev/null | tr " " "\n" | grep "^$1=" | head -n 1 | cut -d "=" -f 2)
+    if [ -z "$ret" ]; then
+        echo "$default" | resolve_hostnames
+    else
+        echo "$ret" | resolve_hostnames
+    fi
+}
+
+has_opt() {
+    cat /proc/cmdline ${rootmnt}/proc/cmdline 2>/dev/null | tr " " "\n" | grep "^$1\$" >/dev/null
+}
+
+insmod_ko() {
+    mod_path=$1
+    log_begin_msg "Loading ${mod_path} kernel module"
+    run wget -q -O mod.ko http://169.254.42.24/kernel/$(uname -r)/kernel/${mod_path}
+    run insmod $(pwd)/mod.ko
+    if [ $? -eq 0 ]; then
+        log_success_msg "successfully loaded"
+        log_end_msg
+    else
+        log_warning_msg "cannot load module"
+        log_end_msg
+    fi
+}
+
+gen_passwd() {
+	</dev/urandom tr -dc 'A-Za-z0-9' | head -c 12
+}
+
+pgrep() {
+    seek="$1"
+    ps | grep "$seek" | grep -v "grep" | awk '{print $1}'
+}
