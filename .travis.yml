@@ -9,4 +9,4 @@ install:
 - sudo apt-get update && sudo apt-get -y install qemu-user-static
 - docker run --rm -ti --privileged multiarch/qemu-user-static:register --reset
 script:
-- BOOTMAKER_ARCH=$BOOTMAKER_ARCH ./build.sh
+- sudo BOOTMAKER_ARCH=$BOOTMAKER_ARCH ./build.sh
