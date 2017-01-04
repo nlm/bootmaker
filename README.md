@@ -1,5 +1,6 @@
 bootmaker
 =========
+![Build Status](https://travis-ci.org/nlm/bootmaker.svg?branch=master)
 
 Simple, Docker-based, light, network-boot Linux system, based on Alpine.
 
@@ -23,7 +24,7 @@ Customize your image if needed:
 Build the `initrd.img` and extract `vmlinuz`:
 
 ```
-# ./build.sh
+# BOOTMAKER_ARCH=x86_64 ./build.sh
 ```
 
 You'll get the files, ready to be distributed via pxe
@@ -33,8 +34,18 @@ Supported architectures
 -----------------------
 
 - x86_64
+- armhf
 
 more to come...
+
+Cross Building
+--------------
+
+Add support for crossbuilding, then build your image normally:
+```
+apt-get install qemu-user-static
+docker run --rm --privileged multiarch/qemu-user-static:register
+```
 
 Example pxelinux config
 -----------------------
