@@ -21,7 +21,10 @@ COPY assets/etc/ /etc/
 # -------------------------------
 
 # Listing the files to export
-RUN find . -xdev -not -name .exports > .exports
+RUN find . -xdev \
+           -not -name .exports \
+           -not -name qemu-%%ARCH%%-static \
+  > .exports
 
 # Installing Kernel
 RUN apk update \
