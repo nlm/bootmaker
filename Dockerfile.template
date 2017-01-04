@@ -2,7 +2,7 @@ FROM multiarch/alpine:%%ARCH%%-%%ALPINE_VERSION%%
 MAINTAINER Nicolas Limage <nlimage@online.net>
 
 # Installing static busybox
-COPY assets/downloads/busybox-%%ARCH%% /bin/busybox.static
+ADD https://github.com/nlm/busybox-static-multiarch/releases/download/prerelease-1.25.1/busybox-%%CROSS_TRIPLE%% /bin/busybox.static
 RUN chmod 755 /bin/busybox.static \
     && mv /bin/busybox.static /bin/busybox
 RUN /bin/busybox --install -s

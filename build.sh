@@ -3,7 +3,7 @@ ARCH="${BOOTMAKER_ARCH:-$(uname -m)}"
 IMAGE_NAME="${BOOTMAKER_DOCKERIMAGE:-bootmaker}"
 WORKDIR="${BOOTMAKER_WORKDIR:-.}"
 OUTPUTDIR="${BOOTMAKER_OUTPUTDIR:-${WORKDIR}}"
-MODULE_SET="${BOOTMAKER_MODULESSET:-basic}"
+MODULE_SET="${BOOTMAKER_MODULESET:-basic}"
 
 . "assets/init/functions"
 
@@ -13,9 +13,11 @@ echo
 
 case "${ARCH}" in
     x86_64)
+        CROSS_TRIPLE="x86_64-linux-gnu"
         ALPINE_VERSION="v3.5"
         ;;
     armv7l)
+        CROSS_TRIPLE="arm-linux-gnueabihf"
         ALPINE_VERSION="v3.4"
         ;;
     *)
@@ -30,6 +32,7 @@ echo
 log_begin_msg "Generating Dockerfile"
 cat Dockerfile.template \
     | sed -e "s/%%ARCH%%/${ARCH}/g" \
+          -e "s/%%CROSS_TRIPLE%%/${CROSS_TRIPLE}/g" \
           -e "s/%%ALPINE_VERSION%%/${ALPINE_VERSION}/g" \
     > Dockerfile."${ARCH}"
 log_end_msg
@@ -76,12 +79,14 @@ case "${MODULE_SET}" in
             ./lib/modules/${KERNEL_VERSION}/modules.* \
             ./lib/modules/${KERNEL_VERSION}/kernel/lib \
             ./lib/modules/${KERNEL_VERSION}/kernel/fs \
+            ./lib/modules/${KERNEL_VERSION}/kernel/net \
             ./lib/modules/${KERNEL_VERSION}/kernel/drivers/ata \
             ./lib/modules/${KERNEL_VERSION}/kernel/drivers/block \
             ./lib/modules/${KERNEL_VERSION}/kernel/drivers/firmware \
             ./lib/modules/${KERNEL_VERSION}/kernel/drivers/md \
             ./lib/modules/${KERNEL_VERSION}/kernel/drivers/net \
             ./lib/modules/${KERNEL_VERSION}/kernel/drivers/scsi \
+            ./lib/modules/${KERNEL_VERSION}/kernel/drivers/video \
             -not -path '*/kernel/drivers/net/wireless/*' \
             >> .kexports)
         ;;
@@ -91,10 +96,11 @@ case "${MODULE_SET}" in
             >> .kexports)
         ;;
     *)
-        eerror "Unsupported module set: ${MODULE_SET}"
+        eerror "unknown module set: ${MODULE_SET}"
         exit 1
         ;;
 esac
+esuccess "Selected module set: ${MODULE_SET}"
 log_end_msg
 
 BOOTMAKER_INITRAMFS="bootmaker_initrd.img_${KERNEL_VERSION}_${ARCH}"
