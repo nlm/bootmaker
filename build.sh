@@ -3,7 +3,7 @@ ARCH="${BOOTMAKER_ARCH:-$(uname -m)}"
 IMAGE_NAME="${BOOTMAKER_DOCKERIMAGE:-bootmaker}"
 WORKDIR="${BOOTMAKER_WORKDIR:-.}"
 OUTPUTDIR="${BOOTMAKER_OUTPUTDIR:-${WORKDIR}}"
-MODULE_SET="${BOOTMAKER_MODULESET:-basic}"
+MODULE_SET="${BOOTMAKER_MODULESET:-all}"
 
 . "assets/init/functions"
 
@@ -16,7 +16,7 @@ case "${ARCH}" in
         CROSS_TRIPLE="x86_64-linux-gnu"
         ALPINE_VERSION="v3.5"
         ;;
-    armv7l)
+    armhf)
         CROSS_TRIPLE="arm-linux-gnueabihf"
         ALPINE_VERSION="v3.4"
         ;;
