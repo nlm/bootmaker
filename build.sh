@@ -14,6 +14,10 @@ case "${ARCH}" in
         CROSS_TRIPLE="x86_64-linux-gnu"
         ALPINE_VERSION="v3.5"
         ;;
+    aarch64)
+        CROSS_TRIPLE="aarch64-linux-gnu"
+        ALPINE_VERSION="v3.5"
+        ;;
     armhf)
         CROSS_TRIPLE="arm-linux-gnueabihf"
         ALPINE_VERSION="v3.4"
