@@ -7,9 +7,7 @@ MODULE_SET="${BOOTMAKER_MODULESET:-all}"
 
 . "assets/init/functions"
 
-log_begin_msg "Starting Image Builder"
-log_end_msg
-echo
+einfo "Starting Image Builder"
 
 case "${ARCH}" in
     x86_64)
@@ -25,40 +23,32 @@ case "${ARCH}" in
         exit 1
         ;;
 esac
-
 esuccess "Build Architecture: ${ARCH}"
-echo
 
-log_begin_msg "Generating Dockerfile"
+einfo "Generating Dockerfile"
 cat Dockerfile.template \
     | sed -e "s/%%ARCH%%/${ARCH}/g" \
           -e "s/%%CROSS_TRIPLE%%/${CROSS_TRIPLE}/g" \
           -e "s/%%ALPINE_VERSION%%/${ALPINE_VERSION}/g" \
     > Dockerfile."${ARCH}"
-log_end_msg
 
-log_begin_msg "Creating build dir"
+einfo "Creating build dir"
 output_dir="${WORKDIR}/output-${IMAGE_NAME}-${ARCH}"
 [ -d "${output_dir}" ] || mkdir "${output_dir}"
-log_end_msg
 
-log_begin_msg "Building container"
+einfo "Building container"
 docker build -f "Dockerfile.${ARCH}" -t "${IMAGE_NAME}:${ARCH}" .
-log_end_msg
 
-log_begin_msg "Starting container"
+einfo "Starting container"
 container_id=$(docker run -d "${IMAGE_NAME}:${ARCH}" "/bin/true")
-log_end_msg
 
-log_begin_msg "Exporting container data"
+einfo "Exporting container data"
 docker export "${container_id}" | tar -C "${output_dir}" -xf -
-log_end_msg
 
-log_begin_msg "Cleaning container"
+einfo "Cleaning container"
 docker rm "${container_id}"
-log_end_msg
 
-log_begin_msg "Detecting Kernel version"
+einfo "Detecting Kernel version"
 KERNEL_VERSION=$(cat ${output_dir}/.kversion)
 if [ -n "$KERNEL_VERSION" ]; then
     esuccess "Kernel Version: $KERNEL_VERSION"
@@ -66,9 +56,8 @@ else
     eerror "Kernel Version not detected"
     exit 1
 fi
-log_end_msg
 
-log_begin_msg "Enumerating Modules"
+einfo "Enumerating Modules"
 (cd ${output_dir} && find ./lib/modules -type d > .kexports )
 case "${MODULE_SET}" in
     none)
@@ -101,24 +90,20 @@ case "${MODULE_SET}" in
         ;;
 esac
 esuccess "Selected module set: ${MODULE_SET}"
-log_end_msg
 
 BOOTMAKER_INITRAMFS="bootmaker_initrd.img_${KERNEL_VERSION}_${ARCH}"
 BOOTMAKER_VMLINUZ="bootmaker_vmlinuz_${KERNEL_VERSION}_${ARCH}"
 
-log_begin_msg "Building initramfs"
+einfo "Building initramfs"
 (cd "${output_dir}" && cat .exports .kexports | sort | cpio -o --format=newc) \
     | gzip > "${BOOTMAKER_INITRAMFS}"
-log_end_msg
 
-log_begin_msg "Copying kernel"
+einfo "Copying kernel"
 cp "${output_dir}/boot/vmlinuz" "${BOOTMAKER_VMLINUZ}"
-log_end_msg ok
 
-log_begin_msg "Removing temporary files"
+einfo "Removing temporary files"
 rm -fr "${output_dir}"
 rm -f "Dockerfile.${ARCH}"
-log_end_msg
 
 esuccess $(ls -lh "${BOOTMAKER_VMLINUZ}")
 esuccess $(ls -lh "${BOOTMAKER_INITRAMFS}")
