@@ -5,19 +5,8 @@ VERBOSE=${INITRD_VERBOSE:-0}
 # Loading functions
 . /functions
 
-cat <<EOF
-
-Welcome to Online TestBench initrd
-
-████████╗███████╗███████╗████████╗██████╗ ███████╗███╗   ██╗ ██████╗██╗  ██╗
-╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔══██╗██╔════╝████╗  ██║██╔════╝██║  ██║
-   ██║   █████╗  ███████╗   ██║   ██████╔╝█████╗  ██╔██╗ ██║██║     ███████║
-   ██║   ██╔══╝  ╚════██║   ██║   ██╔══██╗██╔══╝  ██║╚██╗██║██║     ██╔══██║
-   ██║   ███████╗███████║   ██║   ██████╔╝███████╗██║ ╚████║╚██████╗██║  ██║
-   ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝
-
-EOF
-
+echo "Welcome to Bootmaker"
+echo
 esuccess "Image build: $(cat /.builddate)"
 esuccess "Kernel version: $(busybox uname -a)"
 if [ ! -d "/lib/modules/$(uname -r)" ]; then
