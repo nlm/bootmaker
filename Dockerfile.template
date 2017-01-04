@@ -20,8 +20,12 @@ COPY assets/etc/ /etc/
 # Add your custom directives here
 # -------------------------------
 
+# Adding build date
+RUN date -u +%Y%m%d-%H%M%S > /.builddate
+
 # Listing the files to export
 RUN find . -xdev \
+           -not -name .dockerenv \
            -not -name .exports \
            -not -name qemu-%%ARCH%%-static \
   > .exports
