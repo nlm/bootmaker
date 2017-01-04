@@ -112,4 +112,4 @@ rm -f "Dockerfile.${ARCH}"
 esuccess $(ls -lh "${BOOTMAKER_VMLINUZ}")
 esuccess $(ls -lh "${BOOTMAKER_INITRAMFS}")
 
-esuccess "Finished"
+einfo "Finished"
