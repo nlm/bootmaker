@@ -1,5 +1,4 @@
 FROM multiarch/alpine:%%ARCH%%-%%ALPINE_VERSION%%
-MAINTAINER Nicolas Limage <nlimage@github.com>
 
 # Installing static busybox
 ADD https://github.com/nlm/busybox-static-multiarch/releases/download/prerelease-1.25.1/busybox-%%CROSS_TRIPLE%% /bin/busybox.static
