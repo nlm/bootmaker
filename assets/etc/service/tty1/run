@@ -1,0 +1,3 @@
+#!/bin/sh
+cd /
+exec chpst -P /sbin/getty -n -l /bin/ash 0 tty1

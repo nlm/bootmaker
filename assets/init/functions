@@ -86,39 +86,16 @@ rescueshell() {
 
 # Function for parsing command line options with "=" in them
 get_opt() {
-    key=$1
-    default=$2
+    key="$1"
+    default="$2"
     ret=$(cat /proc/cmdline "${rootmnt}/proc/cmdline" 2>/dev/null | tr " " "\n" | grep "^$1=" | head -n 1 | cut -d "=" -f 2)
     if [ -z "$ret" ]; then
-        echo "$default" | resolve_hostnames
+        echo "$default"
     else
-        echo "$ret" | resolve_hostnames
+        echo "$ret"
     fi
 }
 
 has_opt() {
     cat /proc/cmdline ${rootmnt}/proc/cmdline 2>/dev/null | tr " " "\n" | grep "^$1\$" >/dev/null
-}
-
-insmod_ko() {
-    mod_path=$1
-    log_begin_msg "Loading ${mod_path} kernel module"
-    run wget -q -O mod.ko http://169.254.42.24/kernel/$(uname -r)/kernel/${mod_path}
-    run insmod $(pwd)/mod.ko
-    if [ $? -eq 0 ]; then
-        log_success_msg "successfully loaded"
-        log_end_msg
-    else
-        log_warning_msg "cannot load module"
-        log_end_msg
-    fi
-}
-
-gen_passwd() {
-	</dev/urandom tr -dc 'A-Za-z0-9' | head -c 12
-}
-
-pgrep() {
-    seek="$1"
-    ps | grep "$seek" | grep -v "grep" | awk '{print $1}'
 }

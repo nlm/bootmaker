@@ -1,0 +1,9 @@
+#!/bin/sh
+. /functions
+
+# Detect Hardware
+log_begin_msg "Detecting hardware..."
+udevd --daemon
+udevadm trigger
+udevadm settle
+log_end_msg

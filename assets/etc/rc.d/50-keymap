@@ -1,0 +1,11 @@
+#!/bin/sh
+. /functions
+
+# Loading Keymap
+log_begin_msg "Loading keymap"
+KEYMAP=$(get_opt keymap)
+if [ -n "${KEYMAP}" ]; then
+    esuccess "keymap: ${KETMAP}"
+    loadkmap "/usr/share/bkeymaps/${KEYMAP}.bmap"
+fi
+log_end_msg

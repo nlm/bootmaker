@@ -15,9 +15,9 @@ RUN apk update \
 COPY assets/init/init assets/init/functions /
 COPY assets/etc/ /etc/
 
-# -------------------------------
-# Add your custom directives here
-# -------------------------------
+# Run custom build hooks
+ADD hooks /.build_hooks
+RUN run-parts --exit-on-error /.build_hooks && rm -rf /.build_hooks
 
 # Adding build date
 RUN date -u +%Y%m%d-%H%M%S > /.builddate

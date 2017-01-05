@@ -1,0 +1,3 @@
+#!/bin/sh
+cd /
+exec chpst -P /usr/sbin/telnetd -F -l /bin/sh

@@ -1,0 +1,8 @@
+#!/bin/sh
+. /functions
+
+# Configure network
+log_begin_msg "Configuring network"
+run ifup -a
+ip a | grep inet
+log_end_msg
