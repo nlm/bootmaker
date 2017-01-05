@@ -1,9 +1,10 @@
 #!/bin/bash -eu
 ARCH="${BOOTMAKER_ARCH:-$(uname -m)}"
-IMAGE_NAME="${BOOTMAKER_DOCKERIMAGE:-bootmaker}"
+DOCKERIMAGE="${BOOTMAKER_DOCKERIMAGE:-bootmaker}"
 WORKDIR="${BOOTMAKER_WORKDIR:-.}"
 OUTPUTDIR="${BOOTMAKER_OUTPUTDIR:-${WORKDIR}}"
-MODULE_SET="${BOOTMAKER_MODULESET:-all}"
+MODULESET="${BOOTMAKER_MODULESET:-all}"
+FILEPREFIX="${BOOTMAKER_FILEPREFIX:-bootmaker}"
 
 . "assets/init/functions"
 
@@ -12,15 +13,15 @@ einfo "Starting Image Builder"
 case "${ARCH}" in
     x86_64)
         CROSS_TRIPLE="x86_64-linux-gnu"
-        ALPINE_VERSION="v3.5"
+        ALPINE_VERSION="latest-stable"
         ;;
     aarch64)
         CROSS_TRIPLE="aarch64-linux-gnu"
-        ALPINE_VERSION="v3.5"
+        ALPINE_VERSION="latest-stable"
         ;;
     armhf)
         CROSS_TRIPLE="arm-linux-gnueabihf"
-        ALPINE_VERSION="v3.4"
+        ALPINE_VERSION="latest-stable"
         ;;
     *)
         eerror "Architecture not supported: ${ARCH}"
@@ -37,14 +38,14 @@ cat Dockerfile.template \
     > Dockerfile."${ARCH}"
 
 einfo "Creating build dir"
-output_dir="${WORKDIR}/output-${IMAGE_NAME}-${ARCH}"
+output_dir="${WORKDIR}/output-${DOCKERIMAGE}-${ARCH}"
 [ -d "${output_dir}" ] || mkdir "${output_dir}"
 
 einfo "Building container"
-docker build -f "Dockerfile.${ARCH}" -t "${IMAGE_NAME}:${ARCH}" .
+docker build -f "Dockerfile.${ARCH}" -t "${DOCKERIMAGE}:${ARCH}" .
 
 einfo "Starting container"
-container_id=$(docker run -d "${IMAGE_NAME}:${ARCH}" "/bin/true")
+container_id=$(docker run -d "${DOCKERIMAGE}:${ARCH}" "/bin/true")
 
 einfo "Exporting container data"
 docker export "${container_id}" | tar -C "${output_dir}" -xf -
@@ -63,7 +64,7 @@ fi
 
 einfo "Enumerating Modules"
 (cd ${output_dir} && find ./lib/modules -type d > .kexports )
-case "${MODULE_SET}" in
+case "${MODULESET}" in
     none)
         ;;
     basic)
@@ -89,14 +90,14 @@ case "${MODULE_SET}" in
             >> .kexports)
         ;;
     *)
-        eerror "unknown module set: ${MODULE_SET}"
+        eerror "unknown module set: ${MODULESET}"
         exit 1
         ;;
 esac
-esuccess "Selected module set: ${MODULE_SET}"
+esuccess "Selected module set: ${MODULESET}"
 
-BOOTMAKER_INITRAMFS="bootmaker_initrd.img_${KERNEL_VERSION}_${ARCH}"
-BOOTMAKER_VMLINUZ="bootmaker_vmlinuz_${KERNEL_VERSION}_${ARCH}"
+BOOTMAKER_INITRAMFS="${FILEPREFIX}_initrd.img_${ARCH}"
+BOOTMAKER_VMLINUZ="${FILEPREFIX}_vmlinuz_${ARCH}"
 
 einfo "Building initramfs"
 (cd "${output_dir}" && cat .exports .kexports | sort | cpio -o --format=newc) \
