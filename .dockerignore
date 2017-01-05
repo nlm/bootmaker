@@ -1,3 +1,4 @@
 output-*
 initrd.img_*
 vmlinuz_*
+bootmaker_*
