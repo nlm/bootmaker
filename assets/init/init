@@ -6,6 +6,7 @@ VERBOSE=${INITRD_VERBOSE:-0}
 . /functions
 
 [ -f /etc/banner ] && (echo; cat /etc/banner; echo) || echo "BootMaker"
+run hostname bootmaker
 esuccess "Image build: $(cat /.builddate)"
 esuccess "Kernel version: $(busybox uname -a)"
 if [ ! -d "/lib/modules/$(uname -r)" ]; then
@@ -63,62 +64,26 @@ esuccess "CPU cores:         $(grep -c ^processor /proc/cpuinfo)"
 log_end_msg
 echo
 
-# Parsing kernel command-line
-for x in $(cat /proc/cmdline); do
-	case $x in
-        keymap=*)
-            KEYMAP=${x#keymap=}
-        ;;
-	esac
-done
-
-# Loading Keymap
-if [ -n "${KEYMAP}" ]; then
-    log_begin_msg "Loading keymap"
-    loadkmap "/usr/share/bkeymaps/${KEYMAP}.bmap"
-    log_end_msg
-fi
-
-# Setting Environment
-log_begin_msg "Setting environment"
-export HTTP_ROOT="/run/www"
-mkdir -p "${HTTP_ROOT}"
-log_end_msg
-
 # Configure network
 log_begin_msg "Configuring network"
+cat /dev/null > /etc/network/interfaces
+for interface in $(ls -1 /sys/class/net); do
+    if [ "$interface" = "lo" ]; then
+        ( echo "auto lo" && echo "iface lo inet loopback" ) \
+            >> /etc/network/interfaces
+    else
+        ( echo "auto $interface" && echo "iface $interface inet dhcp" ) \
+            >> /etc/network/interfaces
+    fi
+done
+
 run ifup -a
 ip a | grep inet
-ip a > "${HTTP_ROOT}/network.txt"
 log_end_msg
 echo
 
-log_success_msg "Running services..."
-run-parts /etc/services-parts/
+log_success_msg "Dropping a shell"
 log_end_msg
-
-# Import boot-type functions
-case "${boot:-shell}" in
-    update|sysassert)
-        log_success_msg "Dropping a shell"
-        log_end_msg
-        ;;
-    *)
-        log_success_msg "Dropping a shell"
-        log_end_msg
-        while true; do
-            (setsid cttyhack sh)
-        done
-        ;;
-esac
-
-
-## Adjust time
-#if [ "$(get_any NO_NTPDATE)" != "1" ]; then
-#    log_begin_msg "Adjusting time (ntp)"
-#    # Clock is stepped after 3 NTP probes to each server, each query timeout in 1 second
-#    # /etc/ntpsrv was improved with any NTP server(s) provided thru DHCP (see etc/udhcpc/default.script)
-#    run ntpdate -b -p 3 -t 1 $(cat /etc/ntpsrv)
-#    log_end_msg
-#fi
-
+while true; do
+    (setsid cttyhack sh)
+done

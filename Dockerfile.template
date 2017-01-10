@@ -1,23 +1,29 @@
 FROM multiarch/alpine:%%ARCH%%-%%ALPINE_VERSION%%
 
 # Installing static busybox
-ADD https://github.com/nlm/busybox-static-multiarch/releases/download/prerelease-1.25.1/busybox-%%CROSS_TRIPLE%% /bin/busybox.static
+ARG BUSYBOX_STATIC=https://github.com/nlm/busybox-static-multiarch/releases/download/prerelease-1.25.1/busybox-%%CROSS_TRIPLE%%
+ADD $BUSYBOX_STATIC /bin/busybox.static
 RUN chmod 755 /bin/busybox.static \
     && mv /bin/busybox.static /bin/busybox
 RUN /bin/busybox --install -s
 
 # Installing core packages
 RUN apk update \
-    && apk add udev bkeymaps \
+    && apk add \
+        udev \
+        bkeymaps \
+        pciutils \
+        wget \
+        usbutils \
+        util-linux \
     && find /var/cache/apk -type f -delete
+
+# Update PCI ids
+RUN update-pciids
 
 # Installing init and direct dependencies
 COPY assets/init/init assets/init/functions /
 COPY assets/etc/ /etc/
-
-# -------------------------------
-# Add your custom directives here
-# -------------------------------
 
 # Adding build date
 RUN date -u +%Y%m%d-%H%M%S > /.builddate
@@ -29,10 +35,16 @@ RUN find . -xdev \
            -not -name qemu-%%ARCH%%-static \
   > .exports
 
-# Installing Kernel
-RUN apk update \
-    && apk add linux-vanilla \
-    && find /var/cache/apk -type f -delete
+## Installing Kernel
+ARG KERNEL_IMAGE=https://github.com/nlm/docker-kextract/releases/download/jessie/vmlinuz-%%DEB_ARCH%%
+ARG KERNEL_MODULES=https://github.com/nlm/docker-kextract/releases/download/jessie/modules-%%DEB_ARCH%%.tar.gz
+ADD $KERNEL_IMAGE /boot/vmlinuz
+ADD $KERNEL_MODULES /lib/modules/
+
+#RUN apk update \
+#    && apk add linux-vanilla \
+#    && find /var/cache/apk -type f -delete
+#
 
 # Finding installed kernel version
 RUN ls -1 /lib/modules > /.kversion

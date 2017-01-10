@@ -1,6 +1,7 @@
 #!/bin/bash -eu
 ARCH="${BOOTMAKER_ARCH:-$(uname -m)}"
 DOCKERIMAGE="${BOOTMAKER_DOCKERIMAGE:-bootmaker}"
+CACHEDIR="${BOOTMAKER_CACHEDIR:-cache}"
 WORKDIR="${BOOTMAKER_WORKDIR:-.}"
 OUTPUTDIR="${BOOTMAKER_OUTPUTDIR:-${WORKDIR}}"
 MODULESET="${BOOTMAKER_MODULESET:-all}"
@@ -14,14 +15,17 @@ case "${ARCH}" in
     x86_64)
         CROSS_TRIPLE="x86_64-linux-gnu"
         ALPINE_VERSION="latest-stable"
+        DEB_ARCH="amd64"
         ;;
     aarch64)
         CROSS_TRIPLE="aarch64-linux-gnu"
         ALPINE_VERSION="latest-stable"
+        DEB_ARCH="arm64"
         ;;
     armhf)
         CROSS_TRIPLE="arm-linux-gnueabihf"
         ALPINE_VERSION="latest-stable"
+        DEB_ARCH="armhf"
         ;;
     *)
         eerror "Architecture not supported: ${ARCH}"
@@ -35,6 +39,7 @@ cat Dockerfile.template \
     | sed -e "s/%%ARCH%%/${ARCH}/g" \
           -e "s/%%CROSS_TRIPLE%%/${CROSS_TRIPLE}/g" \
           -e "s/%%ALPINE_VERSION%%/${ALPINE_VERSION}/g" \
+          -e "s/%%DEB_ARCH%%/${DEB_ARCH}/g" \
     > Dockerfile."${ARCH}"
 
 einfo "Creating build dir"
@@ -42,7 +47,23 @@ output_dir="${WORKDIR}/output-${DOCKERIMAGE}-${ARCH}"
 [ -d "${output_dir}" ] || mkdir "${output_dir}"
 
 einfo "Building container"
-docker build -f "Dockerfile.${ARCH}" -t "${DOCKERIMAGE}:${ARCH}" .
+BUILD_ARGS=""
+if [ -f "${CACHEDIR}/busybox-${CROSS_TRIPLE}" ]; then
+    BUILD_ARGS="$BUILD_ARGS --build-arg BUSYBOX_STATIC=${CACHEDIR}/busybox-${CROSS_TRIPLE}"
+    einfo "- busybox from cache"
+fi
+if [ -f "${CACHEDIR}/modules-${DEB_ARCH}.tar.gz" ]; then
+    BUILD_ARGS="$BUILD_ARGS --build-arg KERNEL_MODULES=${CACHEDIR}/modules-${DEB_ARCH}.tar.gz"
+    einfo "- modules from cache"
+fi
+if [ -f "${CACHEDIR}/vmlinuz-${DEB_ARCH}" ]; then
+    BUILD_ARGS="$BUILD_ARGS --build-arg KERNEL_IMAGE=${CACHEDIR}/vmlinuz-${DEB_ARCH}"
+    einfo "- kernel from cache"
+fi
+
+docker build \
+    $BUILD_ARGS \
+    -f "Dockerfile.${ARCH}" -t "${DOCKERIMAGE}:${ARCH}" .
 
 einfo "Starting container"
 container_id=$(docker run -d "${DOCKERIMAGE}:${ARCH}" "/bin/true")
@@ -54,7 +75,7 @@ einfo "Cleaning container"
 docker rm "${container_id}"
 
 einfo "Detecting Kernel version"
-KERNEL_VERSION=$(cat ${output_dir}/.kversion)
+KERNEL_VERSION=$(cat ${output_dir}/.kversion || true)
 if [ -n "$KERNEL_VERSION" ]; then
     esuccess "Kernel Version: $KERNEL_VERSION"
 else
@@ -86,7 +107,7 @@ case "${MODULESET}" in
         ;;
     all)
         (cd ${output_dir} \
-            && find ./lib/modules/${KERNEL_VERSION} \
+            && find ./lib/modules/ \
             >> .kexports)
         ;;
     *)
@@ -99,12 +120,12 @@ esuccess "Selected module set: ${MODULESET}"
 BOOTMAKER_INITRAMFS="${FILEPREFIX}_initrd.img_${ARCH}"
 BOOTMAKER_VMLINUZ="${FILEPREFIX}_vmlinuz_${ARCH}"
 
-einfo "Building initramfs"
-(cd "${output_dir}" && cat .exports .kexports | sort | cpio -o --format=newc) \
-    | gzip > "${BOOTMAKER_INITRAMFS}"
-
 einfo "Copying kernel"
 cp "${output_dir}/boot/vmlinuz" "${BOOTMAKER_VMLINUZ}"
+
+einfo "Building initramfs"
+(cd "${output_dir}" && cat .exports .kexports | sort | cpio -o --format=newc) \
+    | gzip -9 > "${BOOTMAKER_INITRAMFS}"
 
 einfo "Removing temporary files"
 rm -fr "${output_dir}"
